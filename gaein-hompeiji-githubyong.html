@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>David의 홈페이지</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --bg-soft: #f4f2ec;
+        --surface: #ffffff;
+        --ink: #191c1f;
+        --ink-2: #4c5257;
+        --ink-3: #7d838a;
+        --line: #e3e0d8;
+        --accent: #b3401e;
+        --accent-ink: #ffffff;
+        --accent-soft: #fdf0ea;
+        --navy: #1d3557;
+        --ok: #1a7f4b;
+        --radius: 14px;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #14161a;
+          --bg-soft: #1b1e23;
+          --surface: #1e2126;
+          --ink: #f0eee9;
+          --ink-2: #b9bdc2;
+          --ink-3: #8b9096;
+          --line: #2e3238;
+          --accent: #e0683f;
+          --accent-ink: #ffffff;
+          --accent-soft: #33231c;
+          --navy: #7fa8d9;
+          --ok: #4cc07a;
+          color-scheme: dark;
+        }
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Noto Sans KR", -apple-system, "Segoe UI", sans-serif;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+      }
+      button, input, textarea { font-family: inherit; }
+      button { min-height: 44px; cursor: pointer; }
+      a { color: var(--accent); }
+
+      .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px; }
+
+      /* ── 소개 ─────────────────────────── */
+      .intro { padding: 56px 0 40px; }
+      .intro .hello {
+        font-family: "Noto Serif KR", serif;
+        font-weight: 900;
+        font-size: clamp(30px, 6vw, 44px);
+        line-height: 1.25;
+        margin: 0 0 14px;
+        letter-spacing: -0.01em;
+      }
+      .intro .hello em { font-style: normal; color: var(--accent); }
+      .intro p { margin: 0 0 10px; color: var(--ink-2); font-size: 16.5px; max-width: 620px; }
+      .intro .links { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 10px; }
+      .btn-link {
+        display: inline-flex; align-items: center; gap: 8px;
+        min-height: 44px; padding: 0 18px;
+        border: 1.5px solid var(--ink); border-radius: 999px;
+        color: var(--ink); text-decoration: none; font-weight: 700; font-size: 14.5px;
+        background: var(--surface);
+      }
+      .btn-link:hover { background: var(--ink); color: var(--bg); }
+      .btn-link svg { width: 18px; height: 18px; flex: none; }
+
+      /* ── 섹션 공통 ────────────────────── */
+      section { padding: 40px 0; border-top: 1px solid var(--line); }
+      .sec-head { margin-bottom: 8px; }
+      .sec-head h2 {
+        font-family: "Noto Serif KR", serif;
+        font-size: 26px; font-weight: 900; margin: 0 0 6px; letter-spacing: -0.01em;
+      }
+      .sec-head p { margin: 0; color: var(--ink-2); font-size: 15px; }
+
+      /* ── 라디오 ───────────────────────── */
+      .player-bar {
+        position: sticky; top: 10px; z-index: 20;
+        display: none;
+        align-items: center; gap: 12px;
+        background: var(--navy); color: #fff;
+        border-radius: var(--radius);
+        padding: 12px 16px; margin: 18px 0 4px;
+        box-shadow: 0 8px 24px rgba(0,0,0,.22);
+      }
+      @media (prefers-color-scheme: dark) { .player-bar { background: #24344d; } }
+      .player-bar.on { display: flex; }
+      .player-bar .dot {
+        width: 10px; height: 10px; border-radius: 50%; background: #ff5a3c; flex: none;
+        animation: pulse 1.6s ease-in-out infinite;
+      }
+      @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+      @media (prefers-reduced-motion: reduce) { .player-bar .dot { animation: none; } }
+      .player-bar .p-info { flex: 1; min-width: 0; }
+      .player-bar .p-name { font-weight: 900; font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .player-bar .p-status { font-size: 12.5px; opacity: .75; }
+      .player-bar audio { display: none; }
+      .btn-stop {
+        flex: none; border: 0; border-radius: 10px;
+        background: rgba(255,255,255,.16); color: #fff;
+        font-weight: 700; font-size: 14px; padding: 0 16px;
+      }
+      .btn-stop:hover { background: rgba(255,255,255,.28); }
+
+      .station-grid {
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 20px;
+      }
+      @media (max-width: 620px) { .station-grid { grid-template-columns: 1fr; } }
+      .station {
+        background: var(--surface); border: 1px solid var(--line);
+        border-radius: var(--radius); padding: 18px;
+        display: flex; flex-direction: column; gap: 6px;
+      }
+      .station.playing { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+      .station .st-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+      .station .st-name { font-weight: 900; font-size: 18px; }
+      .station .st-freq { font-weight: 700; color: var(--accent); font-size: 14px; white-space: nowrap; }
+      .station .st-now { font-size: 13.5px; color: var(--ink-2); min-height: 20px; }
+      .station .st-now b { color: var(--ink); font-weight: 700; }
+      .station .st-desc { font-size: 13.5px; color: var(--ink-3); margin: 0; }
+      .station .st-actions { margin-top: auto; padding-top: 10px; display: flex; align-items: center; gap: 10px; }
+      .btn-play {
+        border: 0; border-radius: 10px; padding: 0 20px;
+        background: var(--accent); color: var(--accent-ink);
+        font-weight: 700; font-size: 15px;
+        display: inline-flex; align-items: center; gap: 8px;
+      }
+      .btn-play:hover { filter: brightness(1.08); }
+      .btn-play .tri { font-size: 12px; }
+      .btn-ext {
+        border: 1.5px solid var(--line); border-radius: 10px; padding: 0 18px;
+        background: var(--surface); color: var(--ink);
+        font-weight: 700; font-size: 14.5px; text-decoration: none;
+        display: inline-flex; align-items: center; min-height: 44px;
+      }
+      .btn-ext:hover { border-color: var(--ink); }
+      .st-msg { font-size: 13px; color: var(--ink-3); }
+      .st-msg.err { color: var(--accent); font-weight: 500; }
+      .radio-note { margin-top: 16px; font-size: 13px; color: var(--ink-3); }
+
+      /* ── 프로젝트 ─────────────────────── */
+      .proj-grid {
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 20px;
+      }
+      @media (max-width: 620px) { .proj-grid { grid-template-columns: 1fr; } }
+      .proj {
+        background: var(--bg-soft); border-radius: var(--radius); padding: 20px;
+        display: flex; flex-direction: column; gap: 8px;
+      }
+      .proj .pj-icon { font-size: 26px; line-height: 1; }
+      .proj h3 { margin: 0; font-size: 17.5px; font-weight: 900; }
+      .proj p { margin: 0; color: var(--ink-2); font-size: 14.5px; flex: 1; }
+      .proj .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+      .proj .tag {
+        font-size: 12px; font-weight: 700; color: var(--ink-2);
+        border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px;
+        background: var(--surface);
+      }
+
+      /* ── 방명록 ───────────────────────── */
+      .gb-mode {
+        margin-top: 16px; font-size: 13.5px; color: var(--ink-2);
+        background: var(--accent-soft); border-radius: 10px; padding: 10px 14px;
+      }
+      .gb-form {
+        margin-top: 18px; background: var(--surface);
+        border: 1px solid var(--line); border-radius: var(--radius); padding: 18px;
+        display: flex; flex-direction: column; gap: 10px;
+      }
+      .gb-form label { font-size: 13.5px; font-weight: 700; }
+      .gb-form input[type="text"], .gb-form textarea {
+        width: 100%; border: 1px solid var(--line); border-radius: 10px;
+        background: var(--bg); color: var(--ink);
+        font-size: 15.5px; padding: 11px 13px; min-height: 44px;
+      }
+      .gb-form textarea { resize: vertical; min-height: 84px; line-height: 1.55; }
+      .gb-form input:focus, .gb-form textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
+      .btn-submit {
+        align-self: flex-end; border: 0; border-radius: 10px; padding: 0 24px;
+        background: var(--ink); color: var(--bg); font-weight: 700; font-size: 15px;
+      }
+      .btn-submit:disabled { opacity: .5; cursor: default; }
+      .gb-list { margin-top: 22px; display: flex; flex-direction: column; gap: 12px; }
+      .gb-empty { color: var(--ink-3); font-size: 14.5px; padding: 18px 0; text-align: center; }
+      .entry {
+        border: 1px solid var(--line); border-radius: var(--radius);
+        padding: 16px 18px; background: var(--surface);
+      }
+      .entry .e-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+      .entry .e-name { font-weight: 900; font-size: 15.5px; }
+      .entry .e-time { font-size: 12.5px; color: var(--ink-3); }
+      .entry .e-text { margin: 6px 0 0; font-size: 15px; white-space: pre-wrap; word-break: break-word; }
+      .entry .e-actions { margin-top: 8px; }
+      .btn-reply {
+        border: 0; background: none; color: var(--ink-2);
+        font-size: 13.5px; font-weight: 700; padding: 0 10px; min-height: 36px; border-radius: 8px;
+      }
+      .btn-reply:hover { background: var(--bg-soft); color: var(--ink); }
+      .replies { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+      .reply {
+        border-left: 3px solid var(--line); padding: 8px 0 8px 14px; margin-left: 4px;
+      }
+      .reply .e-text { font-size: 14.5px; }
+      .reply-form {
+        display: none; margin-top: 10px; flex-direction: column; gap: 8px;
+        background: var(--bg-soft); border-radius: 10px; padding: 12px;
+      }
+      .reply-form.open { display: flex; }
+      .reply-form input[type="text"], .reply-form textarea {
+        width: 100%; border: 1px solid var(--line); border-radius: 8px;
+        background: var(--surface); color: var(--ink); font-size: 14.5px; padding: 9px 11px; min-height: 40px;
+      }
+      .reply-form textarea { resize: vertical; min-height: 60px; }
+      .reply-form .btn-submit { font-size: 14px; padding: 0 18px; min-height: 40px; }
+
+      footer {
+        border-top: 1px solid var(--line); padding: 28px 0 44px;
+        color: var(--ink-3); font-size: 13.5px;
+        display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; justify-content: space-between;
+      }
+      footer a { color: var(--ink-2); font-weight: 700; text-decoration: none; }
+      footer a:hover { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+
+      <!-- 소개 -->
+      <header class="intro">
+        <h1 class="hello">안녕하세요,<br />에드먼턴에서 앱 만드는 <em>David</em>입니다.</h1>
+        <p>캐나다 에드먼턴에 살면서 안드로이드 앱과 작은 하드웨어를 직접 만들어 쓰는 걸 좋아합니다. 골프 GPS 앱부터 한국 라디오, 차고 카메라까지 — 생활에 필요한 건 직접 만들어 봅니다.</p>
+        <p>이 페이지에서는 제가 만든 프로젝트와, 브라우저에서 바로 들을 수 있는 한국 라디오를 소개합니다.</p>
+        <div class="links">
+          <a class="btn-link" href="https://github.com/davidyckim-cks" target="_blank" rel="noopener">
+            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+            GitHub 프로필
+          </a>
+          <a class="btn-link" href="#guestbook">방명록 남기기</a>
+        </div>
+      </header>
+
+      <!-- 라디오 -->
+      <section id="radio">
+        <div class="sec-head">
+          <h2>한국 라디오 듣기</h2>
+          <p>재생 버튼을 누르면 그때그때 방송사에서 새 주소를 받아와 바로 재생합니다. 로그인 없이 들을 수 있어요.</p>
+        </div>
+
+        <div class="player-bar" id="playerBar" role="region" aria-label="재생 중인 방송">
+          <span class="dot" aria-hidden="true"></span>
+          <div class="p-info">
+            <div class="p-name" id="playerName">—</div>
+            <div class="p-status" id="playerStatus">재생 중</div>
+          </div>
+          <button class="btn-stop" id="btnStop" type="button">정지</button>
+          <audio id="audioEl" preload="none"></audio>
+        </div>
+
+        <div class="station-grid">
+          <article class="station" data-station="powerfm">
+            <div class="st-top"><span class="st-name">SBS 파워FM</span><span class="st-freq">107.7 MHz</span></div>
+            <div class="st-now" id="now-powerfm">지금 방송 중: 확인 중…</div>
+            <p class="st-desc">김영철의 파워FM, 두시탈출 컬투쇼 등 SBS 대표 FM 채널</p>
+            <div class="st-actions">
+              <button class="btn-play" type="button" data-play="powerfm"><span class="tri">▶</span> 듣기</button>
+              <span class="st-msg" data-msg="powerfm"></span>
+            </div>
+          </article>
+
+          <article class="station" data-station="lovefm">
+            <div class="st-top"><span class="st-name">SBS 러브FM</span><span class="st-freq">103.5 MHz</span></div>
+            <div class="st-now" id="now-lovefm">지금 방송 중: 확인 중…</div>
+            <p class="st-desc">뉴스·시사와 음악이 함께하는 SBS AM/FM 채널</p>
+            <div class="st-actions">
+              <button class="btn-play" type="button" data-play="lovefm"><span class="tri">▶</span> 듣기</button>
+              <span class="st-msg" data-msg="lovefm"></span>
+            </div>
+          </article>
+
+          <article class="station" data-station="coolfm">
+            <div class="st-top"><span class="st-name">KBS 쿨FM</span><span class="st-freq">89.1 MHz</span></div>
+            <div class="st-now">KBS 2FM · 가요와 예능 중심 채널</div>
+            <p class="st-desc">조정식의 FM대행진, 이은지의 가요광장 등</p>
+            <div class="st-actions">
+              <button class="btn-play" type="button" data-play="coolfm"><span class="tri">▶</span> 듣기</button>
+              <span class="st-msg" data-msg="coolfm"></span>
+            </div>
+          </article>
+
+          <article class="station" data-station="happyfm">
+            <div class="st-top"><span class="st-name">KBS 해피FM</span><span class="st-freq">106.1 MHz</span></div>
+            <div class="st-now">KBS 2라디오 · 중장년층 음악과 생활 정보</div>
+            <p class="st-desc">이본의 라라랜드 등 편안한 음악 프로그램</p>
+            <div class="st-actions">
+              <button class="btn-play" type="button" data-play="happyfm"><span class="tri">▶</span> 듣기</button>
+              <span class="st-msg" data-msg="happyfm"></span>
+            </div>
+          </article>
+
+          <article class="station" data-station="fm4u">
+            <div class="st-top"><span class="st-name">MBC FM4U</span><span class="st-freq">91.9 MHz</span></div>
+            <div class="st-now">굿모닝FM, 정오의 희망곡 등 MBC 대표 FM 채널</div>
+            <p class="st-desc">MBC 스트림이 보안 연결(HTTPS)을 지원하지 않아 이 페이지에서는 재생할 수 없어요.</p>
+            <div class="st-actions">
+              <a class="btn-ext" href="https://mini.imbc.com/" target="_blank" rel="noopener">공식 페이지에서 듣기</a>
+            </div>
+          </article>
+
+          <article class="station" data-station="sfm">
+            <div class="st-top"><span class="st-name">MBC 표준FM</span><span class="st-freq">95.9 MHz</span></div>
+            <div class="st-now">뉴스와 시사, 스포츠 중계의 MBC AM/FM 채널</div>
+            <p class="st-desc">MBC 스트림이 보안 연결(HTTPS)을 지원하지 않아 이 페이지에서는 재생할 수 없어요.</p>
+            <div class="st-actions">
+              <a class="btn-ext" href="https://mini.imbc.com/" target="_blank" rel="noopener">공식 페이지에서 듣기</a>
+            </div>
+          </article>
+        </div>
+
+        <p class="radio-note">방송사 사정에 따라 예고 없이 재생이 안 될 수 있습니다. SBS·KBS 방송은 재생할 때마다 새 스트림 주소를 받아오므로, 멈추면 듣기 버튼을 다시 눌러 주세요.</p>
+      </section>
+
+      <!-- 프로젝트 -->
+      <section id="projects">
+        <div class="sec-head">
+          <h2>프로젝트</h2>
+          <p>직접 만들어서 쓰고 있는 앱과 기기들입니다.</p>
+        </div>
+        <div class="proj-grid">
+          <article class="proj">
+            <div class="pj-icon" aria-hidden="true">⛳</div>
+            <h3>Kim's Golf</h3>
+            <p>골프장에서 그린까지의 거리를 재는 GPS 앱. 폰과 갤럭시 워치에서 각자 GPS로 거리를 계산하고, 홀 정보와 스코어를 함께 보여줍니다. 음성 안내와 음성 명령도 됩니다.</p>
+            <div class="tags"><span class="tag">Android</span><span class="tag">Wear OS</span><span class="tag">GPS</span></div>
+          </article>
+          <article class="proj">
+            <div class="pj-icon" aria-hidden="true">📻</div>
+            <h3>Kim's 라디오</h3>
+            <p>캐나다에서 한국 방송을 듣기 위한 라디오+TV 앱. KBS·MBC·SBS 등 라디오 채널과 TV 채널을 한곳에 모았고, 지금 방송 중인 프로그램도 표시됩니다.</p>
+            <div class="tags"><span class="tag">Android</span><span class="tag">스트리밍</span><span class="tag">HLS</span></div>
+          </article>
+          <article class="proj">
+            <div class="pj-icon" aria-hidden="true">🖥️</div>
+            <h3>Kimsdisplay</h3>
+            <p>ESP32 터치 화면(CYD)으로 만든 독립형 인터넷 라디오. 한국 라디오 6개 채널과 MP3 재생, 7일 날씨를 보여주고, 편성표와 프로그램 포스터는 GitHub에서 자동으로 받아옵니다.</p>
+            <div class="tags"><span class="tag">ESP32</span><span class="tag">하드웨어</span><span class="tag">I2S 오디오</span></div>
+          </article>
+          <article class="proj">
+            <div class="pj-icon" aria-hidden="true">📷</div>
+            <h3>KimsCAM</h3>
+            <p>ESP32-CAM으로 만든 차고 카메라. 움직임이 감지되면 밤 시간대에 플래시를 켜고, 전용 앱에서 실시간 영상과 플래시를 제어할 수 있습니다.</p>
+            <div class="tags"><span class="tag">ESP32-CAM</span><span class="tag">하드웨어</span><span class="tag">Android</span></div>
+          </article>
+          <article class="proj">
+            <div class="pj-icon" aria-hidden="true">🚗</div>
+            <h3>Kim's CAR-OBD2</h3>
+            <p>차량 관리와 OBD2 진단을 합친 앱. 블루투스 OBD2 어댑터로 차량 정보를 읽고, 정비 기록과 엔진오일 교환 기준일을 함께 관리합니다.</p>
+            <div class="tags"><span class="tag">Android</span><span class="tag">OBD2</span><span class="tag">블루투스</span></div>
+          </article>
+          <article class="proj">
+            <div class="pj-icon" aria-hidden="true">🧮</div>
+            <h3>Boilermaker Wage Calculator</h3>
+            <p>보일러메이커 주급 계산기. 근무 시간과 수당을 넣으면 급여를 계산하고, 파이프 규격표·슬링 각도 하중표·RTJ 링 표 같은 현장 참고 자료도 들어 있습니다.</p>
+            <div class="tags"><span class="tag">Android</span><span class="tag">계산기</span><span class="tag">현장 자료</span></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- 방명록 -->
+      <section id="guestbook">
+        <div class="sec-head">
+          <h2>방명록</h2>
+          <p>로그인 없이 누구나 글을 남길 수 있습니다. 답글도 달 수 있어요.</p>
+        </div>
+
+        <div class="gb-mode" id="gbMode" hidden></div>
+
+        <form class="gb-form" id="gbForm">
+          <div>
+            <label for="gbName">이름</label>
+            <input type="text" id="gbName" maxlength="20" placeholder="이름을 입력하세요" autocomplete="name" required />
+          </div>
+          <div>
+            <label for="gbText">글</label>
+            <textarea id="gbText" maxlength="500" placeholder="안녕하세요! 편하게 한마디 남겨 주세요." required></textarea>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:12px;">
+            <span id="gbStatus" style="font-size:13.5px;color:var(--accent);font-weight:500;"></span>
+            <button class="btn-submit" type="submit" id="gbSubmit">글 남기기</button>
+          </div>
+        </form>
+
+        <div class="gb-list" id="gbList">
+          <div class="gb-empty">불러오는 중…</div>
+        </div>
+      </section>
+
+      <footer>
+        <span>© David Kim · Edmonton, Canada</span>
+        <a href="https://github.com/davidyckim-cks" target="_blank" rel="noopener">github.com/davidyckim-cks</a>
+      </footer>
+    </div>
+
+    <script>
+      /* ════════════════════════════════════════════════════════════
+         라디오 플레이어
+         스트림 주소는 서명 토큰이 약 2시간 뒤 만료되므로 하드코딩하지 않고,
+         재생 버튼을 누를 때마다 방송사 API에서 새로 받아옵니다.
+         ════════════════════════════════════════════════════════════ */
+      (function () {
+        var audio = document.getElementById('audioEl');
+        var bar = document.getElementById('playerBar');
+        var pName = document.getElementById('playerName');
+        var pStatus = document.getElementById('playerStatus');
+        var hls = null;
+        var currentId = null;
+        var token = 0; // 빠른 연속 클릭 시 이전 요청 무시용
+
+        var STATIONS = {
+          powerfm: { name: 'SBS 파워FM', resolve: resolveSBS },
+          lovefm:  { name: 'SBS 러브FM', resolve: resolveSBS },
+          coolfm:  { name: 'KBS 쿨FM',   resolve: resolveKBS },
+          happyfm: { name: 'KBS 해피FM', resolve: resolveKBS }
+        };
+        var SBS_URL = {
+          powerfm: 'https://apis.sbs.co.kr/play-api/1.0/livestream/powerpc/powerfm?protocol=hls&ssl=Y',
+          lovefm:  'https://apis.sbs.co.kr/play-api/1.0/livestream/lovepc/lovefm?protocol=hls&ssl=Y'
+        };
+        var KBS_CODE = { coolfm: '25', happyfm: '22' };
+
+        function resolveSBS(id) {
+          return fetch(SBS_URL[id]).then(function (r) {
+            if (!r.ok) throw new Error('http ' + r.status);
+            return r.text();
+          }).then(function (t) {
+            var url = (t || '').trim();
+            if (url.indexOf('http') !== 0) throw new Error('bad url');
+            return url;
+          });
+        }
+        function resolveKBS(id) {
+          return fetch('https://cfpwwwapi.kbs.co.kr/api/v1/landing/live/channel_code/' + KBS_CODE[id])
+            .then(function (r) {
+              if (!r.ok) throw new Error('http ' + r.status);
+              return r.json();
+            }).then(function (j) {
+              var item = j && j.channel_item && j.channel_item[0];
+              if (!item || !item.service_url) throw new Error('no url');
+              return item.service_url;
+            });
+        }
+
+        function setMsg(id, text, isErr) {
+          var el = document.querySelector('[data-msg="' + id + '"]');
+          if (!el) return;
+          el.textContent = text || '';
+          el.className = 'st-msg' + (isErr ? ' err' : '');
+        }
+        function markPlaying(id) {
+          var cards = document.querySelectorAll('.station');
+          for (var i = 0; i < cards.length; i++) {
+            cards[i].classList.toggle('playing', cards[i].getAttribute('data-station') === id);
+          }
+          var btns = document.querySelectorAll('[data-play]');
+          for (var j = 0; j < btns.length; j++) {
+            var b = btns[j];
+            var on = b.getAttribute('data-play') === id;
+            b.innerHTML = on ? '<span class="tri">■</span> 정지' : '<span class="tri">▶</span> 듣기';
+          }
+        }
+        function destroyHls() {
+          if (hls) { try { hls.destroy(); } catch (e) {} hls = null; }
+        }
+        function stopAll() {
+          token++;
+          destroyHls();
+          audio.pause();
+          audio.removeAttribute('src');
+          audio.load();
+          currentId = null;
+          bar.classList.remove('on');
+          markPlaying(null);
+        }
+
+        function play(id) {
+          var st = STATIONS[id];
+          if (!st) return;
+          if (currentId === id) { stopAll(); setMsg(id, ''); return; }
+          stopAll();
+          var my = ++token;
+          currentId = id;
+          bar.classList.add('on');
+          pName.textContent = st.name;
+          pStatus.textContent = '스트림 주소를 받아오는 중…';
+          markPlaying(id);
+          setMsg(id, '연결 중…');
+
+          st.resolve(id).then(function (url) {
+            if (my !== token) return;
+            pStatus.textContent = '버퍼링 중…';
+            if (window.Hls && Hls.isSupported()) {
+              hls = new Hls({ maxBufferLength: 30 });
+              hls.loadSource(url);
+              hls.attachMedia(audio);
+              hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                if (my !== token) return;
+                audio.play().catch(function () {});
+                pStatus.textContent = '재생 중';
+                setMsg(id, '');
+              });
+              hls.on(Hls.Events.ERROR, function (ev, data) {
+                if (my !== token) return;
+                if (data && data.fatal) {
+                  pStatus.textContent = '재생 오류';
+                  setMsg(id, '재생에 실패했어요. 듣기 버튼을 다시 눌러 주세요.', true);
+                }
+              });
+            } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+              audio.src = url;
+              audio.play().catch(function () {});
+              pStatus.textContent = '재생 중';
+              setMsg(id, '');
+            } else {
+              pStatus.textContent = '이 브라우저에서 재생할 수 없어요';
+              setMsg(id, '이 브라우저는 HLS 재생을 지원하지 않아요.', true);
+            }
+          }).catch(function () {
+            if (my !== token) return;
+            pStatus.textContent = '연결 실패';
+            setMsg(id, '연결에 실패했어요. 잠시 후 다시 눌러 주세요.', true);
+            currentId = null;
+            markPlaying(null);
+          });
+        }
+
+        var playBtns = document.querySelectorAll('[data-play]');
+        for (var i = 0; i < playBtns.length; i++) {
+          playBtns[i].addEventListener('click', function () {
+            play(this.getAttribute('data-play'));
+          });
+        }
+        document.getElementById('btnStop').addEventListener('click', stopAll);
+        audio.addEventListener('playing', function () {
+          if (currentId) pStatus.textContent = '재생 중';
+        });
+        audio.addEventListener('waiting', function () {
+          if (currentId) pStatus.textContent = '버퍼링 중…';
+        });
+
+        /* SBS 현재 방송 프로그램명 */
+        function findOnAir(node, out) {
+          if (!node || typeof node !== 'object') return;
+          if (node.channelname && node.title) out.push(node);
+          for (var k in node) {
+            if (Object.prototype.hasOwnProperty.call(node, k)) findOnAir(node[k], out);
+          }
+        }
+        fetch('https://static.apis.sbs.co.kr/play-api/1.0/onair/channels')
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            var list = [];
+            findOnAir(j, list);
+            var power = null, love = null;
+            for (var i = 0; i < list.length; i++) {
+              var cn = String(list[i].channelname).toUpperCase();
+              if (!power && cn.indexOf('POWER') >= 0) power = list[i].title;
+              if (!love && cn.indexOf('LOVE') >= 0) love = list[i].title;
+            }
+            var ep = document.getElementById('now-powerfm');
+            var el = document.getElementById('now-lovefm');
+            if (ep) ep.innerHTML = power ? '지금 방송 중: <b></b>' : '지금 방송 중: 정보를 가져오지 못했어요';
+            if (el) el.innerHTML = love ? '지금 방송 중: <b></b>' : '지금 방송 중: 정보를 가져오지 못했어요';
+            if (ep && power) ep.querySelector('b').textContent = power;
+            if (el && love) el.querySelector('b').textContent = love;
+          })
+          .catch(function () {
+            var ep = document.getElementById('now-powerfm');
+            var el = document.getElementById('now-lovefm');
+            if (ep) ep.textContent = '지금 방송 중: 정보를 가져오지 못했어요';
+            if (el) el.textContent = '지금 방송 중: 정보를 가져오지 못했어요';
+          });
+      })();
+
+      /* ════════════════════════════════════════════════════════════
+         방명록
+         아래 FIREBASE_CONFIG에 Firebase 콘솔에서 복사한 설정을 넣으면
+         Firestore에 저장되어 누구나 글을 보고 남길 수 있습니다.
+         비어 있으면 이 브라우저에만 저장되는 미리보기로 동작합니다.
+         ════════════════════════════════════════════════════════════ */
+      var FIREBASE_CONFIG = {
+        apiKey: "",
+        authDomain: "",
+        projectId: "",
+        storageBucket: "",
+        messagingSenderId: "",
+        appId: ""
+      };
+
+      (function () {
+        var listEl = document.getElementById('gbList');
+        var form = document.getElementById('gbForm');
+        var nameInput = document.getElementById('gbName');
+        var textInput = document.getElementById('gbText');
+        var submitBtn = document.getElementById('gbSubmit');
+        var modeEl = document.getElementById('gbMode');
+        var LS_KEY = 'guestbook_preview_v1';
+        var useFirebase = !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId &&
+                             window.firebase && window.firebase.firestore);
+        var db = null;
+        var entries = []; // {id, name, text, ts(ms), parentId|null}
+
+        if (useFirebase) {
+          try {
+            firebase.initializeApp(FIREBASE_CONFIG);
+            db = firebase.firestore();
+          } catch (e) { useFirebase = false; }
+        }
+        if (!useFirebase) {
+          modeEl.hidden = false;
+          modeEl.textContent = '지금은 미리보기 모드예요. 글은 이 브라우저에만 저장되고 다른 사람에게는 보이지 않습니다. index.html의 FIREBASE_CONFIG에 Firebase 설정을 넣으면 누구나 보고 쓸 수 있는 방명록이 됩니다.';
+        }
+
+        function esc(s) {
+          return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function fmtTime(ts) {
+          if (!ts) return '';
+          try {
+            return new Date(ts).toLocaleString('ko-KR', {
+              year: 'numeric', month: 'short', day: 'numeric',
+              hour: '2-digit', minute: '2-digit'
+            });
+          } catch (e) { return ''; }
+        }
+
+        /* ── 로컬(미리보기) 저장 ── */
+        function loadLocal() {
+          try {
+            var raw = localStorage.getItem(LS_KEY);
+            entries = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(entries)) entries = [];
+          } catch (e) { entries = []; }
+          render();
+        }
+        function saveLocal() {
+          try { localStorage.setItem(LS_KEY, JSON.stringify(entries)); } catch (e) {}
+        }
+
+        /* ── 렌더링 ── */
+        function render() {
+          var tops = entries.filter(function (e) { return !e.parentId; })
+            .sort(function (a, b) { return b.ts - a.ts; });
+          if (!tops.length) {
+            listEl.innerHTML = '<div class="gb-empty">아직 글이 없어요. 첫 글을 남겨 주세요!</div>';
+            return;
+          }
+          var html = '';
+          tops.forEach(function (e) {
+            var replies = entries.filter(function (r) { return r.parentId === e.id; })
+              .sort(function (a, b) { return a.ts - b.ts; });
+            html += '<article class="entry" data-id="' + esc(e.id) + '">'
+              + '<div class="e-head"><span class="e-name">' + esc(e.name) + '</span>'
+              + '<span class="e-time">' + esc(fmtTime(e.ts)) + '</span></div>'
+              + '<p class="e-text">' + esc(e.text) + '</p>'
+              + '<div class="e-actions"><button type="button" class="btn-reply" data-reply-toggle="' + esc(e.id) + '">답글 달기</button></div>';
+            if (replies.length) {
+              html += '<div class="replies">';
+              replies.forEach(function (r) {
+                html += '<div class="reply">'
+                  + '<div class="e-head"><span class="e-name">' + esc(r.name) + '</span>'
+                  + '<span class="e-time">' + esc(fmtTime(r.ts)) + '</span></div>'
+                  + '<p class="e-text">' + esc(r.text) + '</p></div>';
+              });
+              html += '</div>';
+            }
+            html += '<form class="reply-form" data-reply-form="' + esc(e.id) + '">'
+              + '<input type="text" maxlength="20" placeholder="이름" required />'
+              + '<textarea maxlength="500" placeholder="답글을 입력하세요" required></textarea>'
+              + '<button type="submit" class="btn-submit">답글 남기기</button>'
+              + '</form></article>';
+          });
+          listEl.innerHTML = html;
+        }
+
+        /* ── 글 추가 ── */
+        function addEntry(name, text, parentId) {
+          name = (name || '').trim();
+          text = (text || '').trim();
+          if (!name || !text) return Promise.reject(new Error('empty'));
+          if (useFirebase) {
+            return db.collection('guestbook').add({
+              name: name, text: text, parentId: parentId || null,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
+          entries.push({
+            id: 'local-' + Date.now() + '-' + Math.floor(Math.random() * 1e6),
+            name: name, text: text, ts: Date.now(), parentId: parentId || null
+          });
+          saveLocal();
+          render();
+          return Promise.resolve();
+        }
+
+        form.addEventListener('submit', function (ev) {
+          ev.preventDefault();
+          submitBtn.disabled = true;
+          addEntry(nameInput.value, textInput.value, null).then(function () {
+            textInput.value = '';
+            document.getElementById('gbStatus').textContent = '';
+            submitBtn.disabled = false;
+          }).catch(function () {
+            submitBtn.disabled = false;
+            document.getElementById('gbStatus').textContent = '저장하지 못했어요. 잠시 후 다시 시도해 주세요.';
+          });
+        });
+
+        listEl.addEventListener('click', function (ev) {
+          var t = ev.target;
+          if (t && t.getAttribute && t.getAttribute('data-reply-toggle')) {
+            var id = t.getAttribute('data-reply-toggle');
+            var f = listEl.querySelector('[data-reply-form="' + id + '"]');
+            if (f) {
+              f.classList.toggle('open');
+              var inp = f.querySelector('input');
+              if (inp && f.classList.contains('open')) inp.focus();
+            }
+          }
+        });
+        listEl.addEventListener('submit', function (ev) {
+          var f = ev.target;
+          if (!f || !f.getAttribute || !f.getAttribute('data-reply-form')) return;
+          ev.preventDefault();
+          var parentId = f.getAttribute('data-reply-form');
+          var name = f.querySelector('input').value;
+          var text = f.querySelector('textarea').value;
+          var btn = f.querySelector('button[type="submit"]');
+          btn.disabled = true;
+          addEntry(name, text, parentId).then(function () {
+            btn.disabled = false;
+            if (!useFirebase) { /* 로컬은 render에서 폼이 새로 그려짐 */ }
+            else { f.reset(); f.classList.remove('open'); }
+          }).catch(function () {
+            btn.disabled = false;
+            var ta = f.querySelector('textarea');
+            ta.value = (ta.value ? ta.value + '\n' : '') + '(저장 실패 — 잠시 후 다시 시도해 주세요)';
+          });
+        });
+
+        /* ── 초기 로드 ── */
+        if (useFirebase) {
+          db.collection('guestbook').orderBy('createdAt', 'desc').limit(200)
+            .onSnapshot(function (snap) {
+              entries = [];
+              snap.forEach(function (doc) {
+                var d = doc.data() || {};
+                entries.push({
+                  id: doc.id,
+                  name: d.name || '',
+                  text: d.text || '',
+                  ts: d.createdAt && d.createdAt.toMillis ? d.createdAt.toMillis() : Date.now(),
+                  parentId: d.parentId || null
+                });
+              });
+              render();
+            }, function () {
+              listEl.innerHTML = '<div class="gb-empty">방명록을 불러오지 못했어요. Firebase 설정을 확인해 주세요.</div>';
+            });
+        } else {
+          loadLocal();
+        }
+      })();
+    </script>
+  </body>
+</html>
